@@ -3,6 +3,8 @@ package log
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
+	"github.com/rs/zerolog/log"
 	"os"
 	"sync"
 )
@@ -33,6 +35,9 @@ func newStore(f *os.File) (*store, error) {
 	}
 
 	size := uint64(fi.Size())
+
+	log.Debug().Msg(fmt.Sprintf("Creating store for file: %s, with size: %d", fi.Name(), fi.Size()))
+
 	return &store{
 		File: f,
 		size: size,
@@ -78,4 +83,14 @@ func (s *store) Read(pos uint64) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+func (s *store) ReadAt(p []byte, off int64) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.buf.Flush(); err != nil {
+		return 0, err
+	}
+
+	return s.File.ReadAt(p, off)
 }
