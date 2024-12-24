@@ -94,3 +94,16 @@ func (s *store) ReadAt(p []byte, off int64) (int, error) {
 
 	return s.File.ReadAt(p, off)
 }
+
+func (s *store) Close() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	err := s.buf.Flush()
+	if err != nil {
+		return err
+	}
+
+	log.Debug().Msg(fmt.Sprintf("Closing store spawned for file: %s", s.File.Name()))
+
+	return s.File.Close()
+}
